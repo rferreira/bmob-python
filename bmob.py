@@ -9,7 +9,7 @@ import urlparse
 try:
 	import json
 except:
-	import simplesjon as json
+	import simplejson as json
 	
 
 log = logging.getLogger('bmob')
@@ -61,7 +61,10 @@ def api_call(key,secret,url, params):
 		
 	req = urllib2.Request(url, urllib.urlencode(data) )
 	resp = urllib2.urlopen(req)	
-	return resp.read()
+	js = json.loads(resp.read())
+	
+	if js['oops'] is not None:
+		raise Exception(js['oops'])
 				
 # main:
 		
