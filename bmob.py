@@ -5,6 +5,7 @@ import urllib2, urllib
 import time, uuid
 import base64, hmac, hashlib
 import urlparse
+from types import DictType
 
 try:
 	import json
@@ -14,7 +15,7 @@ except:
 
 log = logging.getLogger('bmob')
 
-__version__ = "0.2"
+__version__ = "0.3"
 __license__ ="MIT/X11"
 
 DESC = "BrowserMob's python command line client"
@@ -40,7 +41,7 @@ def sign(secret,url,params):
 	
 	return base64.b64encode(hmac.new(secret, data, hashlib.sha1).digest())
 	
-def api_call(key,secret,url, params):
+def api_call(key,secret,url, params, indent):
 	"""http heavy lifting """
 	
 	data = {
@@ -63,9 +64,14 @@ def api_call(key,secret,url, params):
 	resp = urllib2.urlopen(req)	
 	js = json.loads(resp.read())
 	
-	if js['oops'] is not None:
-		raise Exception(js['oops'])
-				
+	if type(js) is DictType:
+		if js['oops'] is not None:
+			raise Exception(js['oops'])
+	
+	if indent:
+		return json.dumps(js,indent=4)
+	else:
+		return json.dumps(js)		
 # main:
 		
 if len(sys.argv) < 2:
@@ -75,6 +81,7 @@ parser = optparse.OptionParser(usage="bmob.py [options] URL",description=DESC,ve
 
 parser.add_option("-c","--cred", dest="cred", help="your API key and secret in KEY:SECRET format", action="store")
 parser.add_option("-v","--verbose", dest="verbose", help="runs in verbose mode", action="store_true", default=False)
+parser.add_option("-i","--indent", dest="indent", help="indents json output", action="store_true", default=False)
 parser.add_option("-d","--data", dest="data", help="data to be sent with request in key=val mode", action="store", default=None)	
 
 
@@ -108,7 +115,7 @@ if options.data is not None:
 target = sys.argv[-1]
 
 start = time.time() * 1000
-resp = api_call(key,secret,target, params )
+resp = api_call(key,secret,target, params, options.indent)
 elapsed = time.time() * 1000  - start
 
 log.debug('api response (%d msec elapsed): ' % elapsed)
