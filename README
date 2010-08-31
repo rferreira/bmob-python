@@ -3,3 +3,6 @@ Browsermob's python command line client
 API documentation:
 	http://cdn.browsermob.com/api.html
 
+Minimal requirements:
+	python2.5 or later
+	simplejson or json module

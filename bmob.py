@@ -5,7 +5,7 @@ import urllib2, urllib
 import time, uuid
 import base64, hmac, hashlib
 import urlparse
-from types import DictType
+import datetime
 
 try:
 	import json
@@ -15,10 +15,10 @@ except:
 
 log = logging.getLogger('bmob')
 
-__version__ = "0.3"
+__version__ = "0.3.1"
 __license__ ="MIT/X11"
 
-DESC = "BrowserMob's python command line client"
+DESC = "BrowserMob's python command line client"	
 
 def sign(secret,url,params):
 	"""Generates a BMOB friendly signature """
@@ -46,7 +46,7 @@ def api_call(key,secret,url, params, indent):
 	
 	data = {
 		'key' : key,
-		'timestamp': int(time.time() * 1000),
+		'timestamp': int(time.time()*1000),
 		'nonce' : str(uuid.uuid4()),			
 	}
 	
@@ -64,9 +64,11 @@ def api_call(key,secret,url, params, indent):
 	resp = urllib2.urlopen(req)	
 	js = json.loads(resp.read())
 	
-	if type(js) is DictType:
-		if js['oops'] is not None:
-			raise Exception(js['oops'])
+	log.debug('raw response:')
+	log.debug(js)
+	
+	if 'oops' in js:
+		raise Exception(js['oops'])
 	
 	if indent:
 		return json.dumps(js,indent=4)
@@ -102,6 +104,15 @@ if (options.cred is None):
 	
 key, secret =  options.cred.split(':')
 
+# logging some info for debugging later
+log.debug('python version: %s' % sys.version )
+
+try: 
+	import platform
+	log.debug(platform.uname())
+except:
+	pass
+
 # parsing data
 params = {}
 if options.data is not None:
@@ -118,7 +129,7 @@ start = time.time() * 1000
 resp = api_call(key,secret,target, params, options.indent)
 elapsed = time.time() * 1000  - start
 
-log.debug('api response (%d msec elapsed): ' % elapsed)
+log.debug('api response (%d ms elapsed): ' % elapsed)
 print resp
 
 		
