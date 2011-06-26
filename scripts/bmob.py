@@ -7,6 +7,9 @@ import base64, hmac, hashlib
 import urlparse
 import datetime
 
+from browsermob.api import BrowserMobAPI
+from browsermob import __version__ 
+
 try:
 	import json
 except:
@@ -15,66 +18,7 @@ except:
 
 log = logging.getLogger('bmob')
 
-__version__ = "0.3.1"
-__license__ ="MIT/X11"
-
 DESC = "BrowserMob's python command line client"	
-
-def sign(secret,url,params):
-	"""Generates a BMOB friendly signature """
-	
-	data = 'POST' + '\n'
-	data += urlparse.urlparse(url).hostname + '\n'
-	data += urlparse.urlparse(url)[2] + '\n'
-	
-
-	urllib.urlencode(params)
-	
-	for k in sorted(params):
-		data += '%s=%s&' %  ( k, params[k])
-		
-	# removing the trailing &
-	data = data[:-1]
-	
-	log.debug('raw signature data:')
-	log.debug(data)
-	
-	return base64.b64encode(hmac.new(secret, data, hashlib.sha1).digest())
-	
-def api_call(key,secret,url, params, indent):
-	"""http heavy lifting """
-	
-	data = {
-		'key' : key,
-		'timestamp': int(time.time()*1000),
-		'nonce' : str(uuid.uuid4()),			
-	}
-	
-	if params is not None:
-		data.update(params)
-	
-	# adding signature
-	
-	log.debug('combine data:')
-	log.debug(data)
-	
-	data['signature'] = sign(secret,url,data)
-		
-	req = urllib2.Request(url, urllib.urlencode(data) )
-	resp = urllib2.urlopen(req)	
-	js = json.loads(resp.read())
-	
-	log.debug('raw response:')
-	log.debug(js)
-	
-	if 'oops' in js:
-		raise Exception(js['oops'])
-	
-	if indent:
-		return json.dumps(js,indent=4)
-	else:
-		return json.dumps(js)		
-# main:
 		
 if len(sys.argv) < 2:
 	sys.argv.append('-h')
@@ -125,12 +69,21 @@ if options.data is not None:
 	
 target = sys.argv[-1]
 
+client = BrowserMobAPI(key,secret)
+
+# performing the API call
+
 start = time.time() * 1000
-resp = api_call(key,secret,target, params, options.indent)
+resp = client.call(target, params)
 elapsed = time.time() * 1000  - start
 
 log.debug('api response (%d ms elapsed): ' % elapsed)
-print resp
+
+if options.indent:
+    print json.dumps(resp, sort_keys=True, indent=4)
+    
+else:
+    print resp
 
 		
 
